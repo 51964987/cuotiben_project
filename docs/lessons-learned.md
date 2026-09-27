@@ -25,3 +25,13 @@
 - **原 6**：删「令牌与取消分支」「补提交循环条件」「非终态收尾窗口禁止重新入队」（本项目无异步任务 / 令牌 / 取消机制）；状态机词汇本地化为 questions 的 active/mastered、变式批次 pending/all_right/has_wrong、papers 的 graded。
 - **原 1**：「共享实现索引」引用原为悬空，已在 `CODEBUDDY.md` 补「共享实现索引」小节落地。
 
+
+---
+
+## 原 9：basedpyright 下 sqlite3 Row 返回 Any，须集中 cast 收窄
+
+- **日期**：2026-09-27
+- **触发场景**：任何直接使用 `conn.execute(...).fetchone()/fetchall()` 且 `row_factory=sqlite3.Row` 的代码做类型检查（basedpyright 开启 reportAny）时。
+- **强制动作**：`fetchone()`/`fetchall()`/`Row.__getitem__` 在 typeshed 中返回 Any，给变量加注解（`row: sqlite3.Row | None = ...`）无法消除 reportAny；必须在辅助函数内用 `typing.cast` 集中收窄（本项目为 `app/db.py` 的 `_fetchone`/`_fetchall`/`_s`/`_i` 四个助手），业务代码只经助手取行取列，禁止散落 `str(row[...])`/`int(row[...])`。
+- **本项目实例**：2026-09-27 全项目告警清零时，`app/db.py` 首轮仅靠注解仍余 16 条 reportAny，改为四助手集中收窄后清零。
+- **验证方式**：`read_lints` 全工作区 0 错误 0 警告；`py_compile` 通过；库层冒烟（get_setting / eligible_questions / answers_equal）真实运行通过。
