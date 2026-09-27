@@ -3,6 +3,7 @@ import base64
 import json
 import os
 import re
+from typing import cast
 
 import httpx
 
@@ -27,13 +28,26 @@ def get_api_key() -> str:
     return get_setting("api_key") or os.environ.get("GLM_API_KEY", "")
 
 
-def _parse_json(text: str) -> dict:
+def _parse_json(text: str) -> dict[str, object]:
+    """解析 AI 返回的 JSON（容忍 markdown 代码块包裹），非对象结构抛 ValueError。"""
     text = text.strip()
     text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.S)
-    return json.loads(text)
+    data = cast(object, json.loads(text))   # json.loads 返回 Any，先收窄再校验
+    if not isinstance(data, dict):
+        raise ValueError("AI 返回格式异常")
+    return cast(dict[str, object], data)
 
 
-def recognize_question(photo_bytes: bytes) -> dict:
+def _extract_content(resp: httpx.Response) -> str:
+    """从 GLM ChatCompletions 响应 JSON 中提取首个 choice 的 message.content。"""
+    data = cast(dict[str, object], resp.json())   # resp.json() 返回 Any，集中收窄
+    choices = cast(list[object], data["choices"])
+    choice = cast(dict[str, object], choices[0])
+    message = cast(dict[str, object], choice["message"])
+    return cast(str, message["content"])
+
+
+def recognize_question(photo_bytes: bytes) -> dict[str, str | bool]:
     """返回 {"content","answer","knowledge","has_figure"}；失败抛异常，无 Key 抛 ValueError。"""
     api_key = get_api_key()
     if not api_key:
@@ -62,8 +76,8 @@ def recognize_question(photo_bytes: bytes) -> dict:
         headers={"Authorization": f"Bearer {api_key}"},
         timeout=90,
     )
-    resp.raise_for_status()
-    content = resp.json()["choices"][0]["message"]["content"]
+    _ = resp.raise_for_status()
+    content = _extract_content(resp)
     data = _parse_json(content)
     return {
         "content": str(data.get("content", "")).strip(),
@@ -73,7 +87,7 @@ def recognize_question(photo_bytes: bytes) -> dict:
     }
 
 
-def generate_variants(content: str, answer: str, knowledge: str, count: int) -> list:
+def generate_variants(content: str, answer: str, knowledge: str, count: int) -> list[dict[str, str]]:
     """根据原题生成 count 道同类型变式题，返回 [{"content","answer","knowledge"}]。
     失败抛异常（无 Key 抛 ValueError；网络/解析异常原样上抛）。"""
     api_key = get_api_key()
@@ -105,23 +119,25 @@ def generate_variants(content: str, answer: str, knowledge: str, count: int) -> 
         headers={"Authorization": f"Bearer {api_key}"},
         timeout=90,
     )
-    resp.raise_for_status()
-    text = resp.json()["choices"][0]["message"]["content"]
+    _ = resp.raise_for_status()
+    text = _extract_content(resp)
     data = _parse_json(text)
-    if not isinstance(data, dict):
+    questions = data.get("questions")
+    if not isinstance(questions, list):
         raise ValueError("AI 返回格式异常")
-    items = []
-    for it in data.get("questions", []):
+    items: list[dict[str, str]] = []
+    for it in cast(list[object], questions):
         if not isinstance(it, dict):
             continue
-        c = str(it.get("content", "")).strip()
-        a = str(it.get("answer", "")).strip()
+        d = cast(dict[str, object], it)
+        c = str(d.get("content", "")).strip()
+        a = str(d.get("answer", "")).strip()
         if not c or not a:
             continue
         items.append({
             "content": c,
             "answer": a,
-            "knowledge": str(it.get("knowledge", "")).strip(),
+            "knowledge": str(d.get("knowledge", "")).strip(),
         })
     if not items:
         raise ValueError("AI 未返回有效题目")

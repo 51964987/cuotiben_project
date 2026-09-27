@@ -1,0 +1,8 @@
+{
+    // 绑定类型分析器与运行环境为同一解释器（pip 依赖装在 D:/biancheng/python/python3.11.4）
+    "pythonPath": "D:/biancheng/python/python3.11.4/python.exe",
+    // 双保险：显式把 site-packages 加进导入搜索路径，确保 httpx/fastapi 等可解析
+    "extraPaths": ["D:/biancheng/python/python3.11.4/Lib/site-packages"],
+    "pythonVersion": "3.11",
+    "include": ["app", "run.py"]
+}

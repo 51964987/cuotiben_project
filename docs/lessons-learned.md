@@ -35,3 +35,13 @@
 - **强制动作**：`fetchone()`/`fetchall()`/`Row.__getitem__` 在 typeshed 中返回 Any，给变量加注解（`row: sqlite3.Row | None = ...`）无法消除 reportAny；必须在辅助函数内用 `typing.cast` 集中收窄（本项目为 `app/db.py` 的 `_fetchone`/`_fetchall`/`_s`/`_i` 四个助手），业务代码只经助手取行取列，禁止散落 `str(row[...])`/`int(row[...])`。
 - **本项目实例**：2026-09-27 全项目告警清零时，`app/db.py` 首轮仅靠注解仍余 16 条 reportAny，改为四助手集中收窄后清零。
 - **验证方式**：`read_lints` 全工作区 0 错误 0 警告；`py_compile` 通过；库层冒烟（get_setting / eligible_questions / answers_equal）真实运行通过。
+
+---
+
+## 原 10：类型分析器报「无法解析导入」先查环境绑定，而非改代码
+
+- **日期**：2026-09-27
+- **触发场景**：`pip show` / `python -c "import xxx"` 均正常，但 basedpyright 对第三方库（如 httpx）报 reportMissingImports，并连带派生几十条「类型未知」告警时。
+- **强制动作**：先核对三件事——① 依赖是否真的装在运行解释器的 site-packages（`pip show` 看 Location）；② 项目内是否有 venv / `pyrightconfig.json`；③ 分析器绑定解释器与运行解释器是否一致。不一致时在项目根新建 `pyrightconfig.json`，写入 `"pythonPath"` 指向运行解释器，并加 `"extraPaths"` 直接指向 site-packages 目录兜底；禁止为消告警改业务代码或加 `# type: ignore`。
+- **本项目实例**：2026-09-27 `app/ai.py` 报 42 条问题，根因是分析器未绑定 `D:/biancheng/python/python3.11.4`（httpx 0.28.1 实际已装且可导入，项目无 venv 无 pyright 配置）；补 `pyrightconfig.json`（pythonPath + extraPaths）后 42 → 2，再修 2 处 `raise_for_status()` 未使用返回值即清零。
+- **验证方式**：`read_lints` 全工作区 0 告警；`python -c "import app.main"` 真实导入成功；`_parse_json` / `_extract_content` 用本地构造的 httpx.Response 冒烟通过。
