@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ===== 错题本项目专属（运行时数据不入库，本地备份 data\ 目录即可） =====
+data/
+.idea/
+Thumbs.db

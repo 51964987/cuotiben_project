@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}编辑题目 - 错题本{% endblock %}
+{% block content %}
+<h1>编辑题目 #{{ q.id }}</h1>
+
+{% if from_photo and not q.content %}
+<div class="card warn-card">AI 未返回识别结果，请直接在下方手动输入题目；也可返回重新拍照。</div>
+{% elif from_photo %}
+<div class="card ok-card">识别完成，请核对题干、答案是否准确（尤其数字和符号），确认无误后保存。</div>
+{% endif %}
+
+<form class="card" method="post" action="/questions/{{ q.id }}/edit"
+      onsubmit="document.getElementById('figure_data').value = (window.getCropData ? getCropData() : '');">
+  <input type="hidden" name="figure_data" id="figure_data" value="">
+
+  <label>题干（数学公式用 $...$ 包裹，如 $\\frac{1}{2}$）</label>
+  <textarea name="content" rows="6" required>{{ q.content }}</textarea>
+
+  <label>图形（选填：几何图、线段图等）</label>
+  {% if q.figure %}
+  <div class="fig-preview"><img src="/figures/{{ q.figure }}" alt="已保存图形">
+    <span class="muted">已有图形，重新框选可覆盖</span></div>
+  {% endif %}
+
+  {% if q.photo %}
+  <div class="crop-box">
+    <p class="crop-tip no-print">如题目含几何图形/线段图：在下方照片上<b>拖动鼠标/手指框选图形区域</b>，保存时会自动裁剪为题目附图。</p>
+    <canvas id="crop-canvas" class="no-print"></canvas>
+    <img id="photo-img" src="/photos/{{ q.photo }}" alt="原始照片" hidden>
+  </div>
+  {% endif %}
+
+  <label>答案与解析</label>
+  <textarea name="answer" rows="4">{{ q.answer }}</textarea>
+
+  <label>知识点 / 错因（选填）</label>
+  <input type="text" name="knowledge" value="{{ q.knowledge }}" placeholder="如：分数加法 / 计算错误">
+
+  <label>来源（选填）</label>
+  <input type="text" name="source" value="{{ q.source }}" placeholder="如：数学练习册 P32">
+
+  <label>状态</label>
+  <select name="status">
+    <option value="active" {{ 'selected' if q.status == 'active' }}>待重做</option>
+    <option value="mastered" {{ 'selected' if q.status == 'mastered' }}>已掌握（不再出卷）</option>
+  </select>
+
+  <div class="btn-row">
+    <button type="submit" class="btn primary">保存</button>
+    <a class="btn" href="/questions/{{ q.id }}/variants">变式练习</a>
+    <a class="btn" href="/questions">取消</a>
+  </div>
+</form>
+
+<form method="post" action="/questions/{{ q.id }}/delete" onsubmit="return confirm('确定删除这道题吗？');">
+  <button type="submit" class="btn danger no-print">删除此题</button>
+</form>
+
+<script src="/static/js/crop.js"></script>
+{% endblock %}

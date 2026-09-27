@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}变式作答 - 错题本{% endblock %}
+{% block content %}
+<h1>变式练习 · 第 {{ b.batch_no }} 批</h1>
+<p class="no-print"><a href="/questions/{{ b.question_id }}/variants">← 返回该题变式列表</a>
+  <span class="muted">（原题 #{{ b.question_id }}）</span></p>
+
+{% if err %}<div class="card warn-card">{{ err }}</div>{% endif %}
+
+{% if pending and pending.id != b.id %}
+<div class="card ok-card">该题已生成新的待作答批次（第 {{ pending.batch_no }} 批）：
+  <a href="/batches/{{ pending.id }}">去作答 →</a></div>
+{% endif %}
+
+{% if graded %}
+  {% if b.status == 'all_right' %}
+  <div class="card ok-card">本批 {{ items|length }} 题全部做对，变式练习达标！原题仍会按间隔进入重做卷巩固。</div>
+  {% else %}
+  <div class="card warn-card">本批有错题。讲解订正后{% if auto_next == 'auto' %}（下次提交时系统会自动生成新的一批）{% endif %}，点击下方「再来一批」继续练习。</div>
+  {% endif %}
+{% else %}
+<div class="card">请在每题下方填写最终答案（一题一个答案，如 3/4、0.5、12）。提交后系统自动判分；未填写的题可稍后补答再提交。</div>
+{% endif %}
+
+{% if graded %}
+  {% for it in items %}
+  <div class="card q-card">
+    <div class="q-body">
+      <div class="q-content math-target">{{ loop.index }}. {{ it.content }}</div>
+      <div class="q-meta">
+        {% if it.result == 'right' %}
+        <span class="badge ok">✓ 对</span>
+        {% elif it.result == 'wrong' %}
+        <span class="badge wrong">✗ 错</span>
+        {% else %}
+        <span class="badge warn">未作答</span>
+        {% endif %}
+        <span class="muted">孩子的答案：{{ it.user_answer or '（未填写）' }}</span>
+        <span class="muted">参考答案：<span class="math-target">{{ it.answer }}</span></span>
+      </div>
+      <form method="post" action="/batches/{{ b.id }}/override/{{ it.id }}" class="filter-bar no-print">
+        {% if it.result == 'right' %}
+        <button type="submit" name="result" value="wrong" class="btn">改判为错</button>
+        {% elif it.result == 'wrong' %}
+        <button type="submit" name="result" value="right" class="btn">改判为对</button>
+        <button type="submit" name="result" value="" class="btn">撤销判分</button>
+        {% else %}
+        <button type="submit" name="result" value="right" class="btn">判对</button>
+        <button type="submit" name="result" value="wrong" class="btn">判错</button>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+<form method="post" action="/batches/{{ b.id }}/submit">
+  {% for it in items %}
+  <div class="card q-card">
+    <div class="q-body">
+      <div class="q-content math-target">{{ loop.index }}. {{ it.content }}</div>
+      <label for="answer_{{ it.id }}">第 {{ loop.index }} 题答案</label>
+      <input type="text" id="answer_{{ it.id }}" name="answer_{{ it.id }}"
+             value="{{ it.user_answer }}" placeholder="填写最终答案">
+    </div>
+  </div>
+  {% endfor %}
+  <div class="sticky-bar no-print">
+    <button type="submit" class="btn primary">提交判分</button>
+  </div>
+</form>
+{% endif %}
+
+{% if graded and b.status == 'has_wrong' %}
+<form method="post" action="/questions/{{ b.question_id }}/variants/generate" class="no-print">
+  <input type="hidden" name="count" value="{{ items|length }}">
+  <div class="sticky-bar">
+    <button type="submit" class="btn primary">讲解订正后，再来一批（{{ items|length }} 题）</button>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

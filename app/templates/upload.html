@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}拍照录入 - 错题本{% endblock %}
+{% block content %}
+<h1>拍照录入</h1>
+
+{% if not has_key %}
+<div class="card warn-card">
+  ⚠ 尚未配置 AI 识别的 API Key。仍可拍照后手动录入，或到「<a href="/settings">设置</a>」填写 Key 后自动识别。
+</div>
+{% endif %}
+
+<form class="card" method="post" action="/upload" enctype="multipart/form-data"
+      onsubmit="var b=this.querySelector('button'); b.disabled=true; b.textContent='识别中，请稍候…';">
+  <label class="photo-label">
+    <input type="file" name="photo" accept="image/*" capture="environment" required>
+    <span class="muted">手机会直接调起相机；电脑上传照片文件也可以</span>
+  </label>
+  <button type="submit" class="btn primary">上传并识别</button>
+</form>
+
+<div class="card">
+  <h2>拍照小技巧</h2>
+  <ul>
+    <li>光线充足、正面拍摄，题目占满画面</li>
+    <li>一次只拍一道题，识别更准</li>
+    <li>识别结果会进入编辑页，请核对数字和公式后再保存</li>
+  </ul>
+</div>
+{% endblock %}

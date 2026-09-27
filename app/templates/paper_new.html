@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}组卷 - 错题本{% endblock %}
+{% block content %}
+<h1>组卷</h1>
+
+<div class="card">
+  <p>当前待重做 <b>{{ total_active }}</b> 题，其中已到间隔期（超 {{ days }} 天）<b class="warn-text">{{ eligible_count }}</b> 题。</p>
+</div>
+
+<form class="card" method="post" action="/paper/create">
+  <label>选题方式</label>
+  <select name="mode" id="mode">
+    <option value="smart">智能选题：只取超过间隔期的题，错得多的排前面</option>
+    <option value="all">全部错题：所有待重做的题</option>
+  </select>
+
+  <label>间隔天数（智能选题时，距上次做错超过该天数才入选；0 = 不限）</label>
+  <input type="number" name="days" value="{{ days }}" min="0">
+
+  <label>最多题数（0 = 不限）</label>
+  <input type="number" name="max_count" value="0" min="0">
+
+  <p class="muted">也可以在「题库」页勾选题目后点「用选中题目组卷」手动选题。</p>
+  <button type="submit" class="btn primary">生成试卷</button>
+</form>
+{% endblock %}

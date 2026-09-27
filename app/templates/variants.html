@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}变式练习 - 错题本{% endblock %}
+{% block content %}
+<h1>变式练习</h1>
+<p class="no-print"><a href="/questions/{{ q.id }}/edit">← 返回题目编辑</a></p>
+
+<div class="card">
+  <div class="q-content math-target">{{ q.content }}</div>
+  {% if q.figure %}<img class="q-fig" src="/figures/{{ q.figure }}" alt="题目图形">{% endif %}
+  <details class="ans-details no-print"><summary>查看原题答案</summary><div class="ans-text math-target">{{ q.answer }}</div></details>
+  {% if q.knowledge %}<div class="q-meta"><span class="badge">{{ q.knowledge }}</span></div>{% endif %}
+</div>
+
+{% if err %}<div class="card warn-card">{{ err }}</div>{% endif %}
+
+{% if figure %}
+<div class="card warn-card">图形题暂不支持变式练习（变式题无法自动生成配图），请改用重做卷巩固。</div>
+{% else %}
+<form method="post" action="/questions/{{ q.id }}/variants/generate" class="filter-bar no-print">
+  {% if pending %}
+  <span class="muted">已有待作答的第 {{ pending.batch_no }} 批，完成后才能再生成一批。</span>
+  <a class="btn primary" href="/batches/{{ pending.id }}">继续作答第 {{ pending.batch_no }} 批</a>
+  {% else %}
+  <label for="count" style="margin:0;">每批题数</label>
+  <input type="number" id="count" name="count" value="{{ count }}" min="1" max="10" style="width:90px; flex:none;">
+  <button type="submit" class="btn primary">AI 生成一批变式题</button>
+  {% endif %}
+</form>
+{% endif %}
+
+<h2>批次记录</h2>
+{% if batches %}
+<div class="q-list">
+  {% for b in batches %}
+  <div class="card q-card">
+    <div class="q-body">
+      <div class="q-content">第 {{ b.batch_no }} 批 · 共 {{ b.item_count }} 题</div>
+      <div class="q-meta">
+        {% if b.status == 'pending' %}
+        <span class="badge warn">待作答</span>
+        {% elif b.status == 'all_right' %}
+        <span class="badge ok">全部做对</span>
+        {% else %}
+        <span class="badge wrong">有错题</span>
+        {% endif %}
+        {% if b.status != 'pending' %}
+        <span class="muted">对 {{ b.right_count or 0 }} / 错 {{ b.wrong_count or 0 }} · 批改于 {{ b.graded_at[:16] }}</span>
+        {% endif %}
+        <span class="muted">生成于 {{ b.created_at[:16] }}</span>
+      </div>
+      <div class="q-meta">
+        <a class="btn" href="/batches/{{ b.id }}">{{ '查看结果' if b.status != 'pending' else '去作答' }}</a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="muted">还没有生成过变式批次。</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}设置 - 错题本{% endblock %}
+{% block content %}
+<h1>设置</h1>
+
+<form class="card" method="post" action="/settings">
+  <label>智谱 API Key（用于拍照识别，注册 https://open.bigmodel.cn 获取）</label>
+  <input type="password" name="api_key" value="{{ api_key }}" placeholder="留空表示不启用识别">
+
+  <label>识别模型</label>
+  <input type="text" name="model" value="{{ model }}" placeholder="glm-4v-flash（免费）/ glm-4v-plus（更准）">
+
+  <label>默认间隔天数（距上次做错超过 N 天才再次出卷）</label>
+  <input type="number" name="default_days" value="{{ default_days }}" min="0">
+
+  <label>连续做对多少次后移出错题本</label>
+  <input type="number" name="master_threshold" value="{{ master_threshold }}" min="1">
+
+  <label>变式练习每批题数（1-10，AI 生成的同类变式题）</label>
+  <input type="number" name="variant_count" value="{{ variant_count }}" min="1" max="10">
+
+  <label>变式练习批改后有错时</label>
+  <select name="variant_auto_next">
+    <option value="manual" {{ 'selected' if variant_auto_next == 'manual' }}>手动点击「再来一批」（先讲评再练，可控成本）</option>
+    <option value="auto" {{ 'selected' if variant_auto_next == 'auto' }}>自动生成下一批</option>
+  </select>
+
+  <button type="submit" class="btn primary">保存设置</button>
+</form>
+
+<div class="card">
+  <h2>局域网访问</h2>
+  <p class="muted">本服务监听 0.0.0.0:8000。手机连接同一 WiFi 后，用浏览器访问 <b>http://电脑IP:8000</b>。
+  若无法访问，请检查 Windows 防火墙是否放行 8000 端口（或 Python 程序）。</p>
+</div>
+{% endblock %}

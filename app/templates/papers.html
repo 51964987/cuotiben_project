@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}试卷列表 - 错题本{% endblock %}
+{% block content %}
+<h1>试卷</h1>
+<a class="btn primary no-print" href="/paper/new">＋新建组卷</a>
+
+{% if rows %}
+<div class="q-list">
+{% for p in rows %}
+  <div class="card q-card">
+    <div class="q-body">
+      <a href="/papers/{{ p.id }}" class="q-content">{{ p.title }}</a>
+      <div class="q-meta">
+        <span class="badge">{{ p.created_at[:10] }}</span>
+        <span class="badge">{{ p.qcount }} 题</span>
+        {% if p.graded %}
+          <span class="badge {{ 'ok' if p.right_count == p.qcount else 'wrong' }}">已批改 对 {{ p.right_count or 0 }}/{{ p.qcount }}</span>
+        {% else %}
+          <span class="badge warn">待批改</span>
+        {% endif %}
+      </div>
+      <div class="btn-row no-print">
+        <a class="btn" href="/papers/{{ p.id }}">查看/打印</a>
+        <a class="btn" href="/papers/{{ p.id }}/grade">批改</a>
+        <form method="post" action="/papers/{{ p.id }}/delete" onsubmit="return confirm('删除该试卷？题目不受影响');">
+          <button type="submit" class="btn danger">删除</button>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endfor %}
+</div>
+{% else %}
+<div class="card">还没有试卷。<a href="/paper/new">去组卷 →</a></div>
+{% endif %}
+{% endblock %}

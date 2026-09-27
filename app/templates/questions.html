@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}题库 - 错题本{% endblock %}
+{% block content %}
+<h1>题库</h1>
+
+<form class="filter-bar" method="get" action="/questions">
+  <select name="status">
+    <option value="active" {{ 'selected' if status == 'active' }}>待重做</option>
+    <option value="mastered" {{ 'selected' if status == 'mastered' }}>已掌握</option>
+    <option value="all" {{ 'selected' if status == 'all' }}>全部</option>
+  </select>
+  <input type="text" name="q" value="{{ q }}" placeholder="搜索题目/知识点">
+  <button type="submit" class="btn">筛选</button>
+  <a class="btn primary" href="/upload">＋拍照录入</a>
+</form>
+
+{% if rows %}
+<form method="post" action="/paper/create">
+  <input type="hidden" name="mode" value="manual">
+  <div class="q-list">
+  {% for r in rows %}
+    <div class="card q-card">
+      <label class="q-check"><input type="checkbox" name="question_ids" value="{{ r.id }}"></label>
+      <div class="q-body">
+        <a href="/questions/{{ r.id }}/edit" class="q-content math-target">{{ r.content or '（未录入题干，点击编辑）' }}</a>
+        {% if r.figure %}<img class="q-fig" src="/figures/{{ r.figure }}" alt="图形">{% endif %}
+        <div class="q-meta">
+          <span class="badge wrong">错 {{ r.wrong_count }} 次</span>
+          {% if r.knowledge %}<span class="badge">{{ r.knowledge }}</span>{% endif %}
+          {% if r.status == 'mastered' %}<span class="badge ok">已掌握</span>
+          {% else %}<span class="badge">上次错于 {{ r.last_wrong_at[:10] }}</span>{% endif %}
+          <a class="badge no-print" href="/questions/{{ r.id }}/variants">变式</a>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+  </div>
+  <div class="sticky-bar">
+    <button type="submit" class="btn primary">用选中题目组卷</button>
+  </div>
+</form>
+{% else %}
+<div class="card">还没有题目。<a href="/upload">去拍照录入 →</a></div>
+{% endif %}
+{% endblock %}

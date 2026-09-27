@@ -1,0 +1,139 @@
+/* 错题本样式 */
+* { box-sizing: border-box; }
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", -apple-system, sans-serif;
+  margin: 0; background: #f2f4f8; color: #24292f; font-size: 16px;
+}
+main { max-width: 760px; margin: 0 auto; padding: 16px; padding-bottom: 80px; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1 { font-size: 22px; } h2 { font-size: 18px; }
+.muted { color: #6b7280; font-size: 14px; }
+.warn-text, .stat-num.warn { color: #d97706; }
+
+/* 导航 */
+.topnav {
+  background: #1e293b; padding: 0 16px; display: flex; align-items: center;
+  gap: 4px; overflow-x: auto; white-space: nowrap;
+}
+.topnav a { color: #cbd5e1; padding: 12px 12px; font-size: 15px; }
+.topnav a:hover { color: #fff; text-decoration: none; }
+.topnav .brand { font-weight: 700; color: #fff; font-size: 17px; margin-right: 8px; }
+
+/* 卡片 */
+.card {
+  background: #fff; border-radius: 10px; padding: 16px; margin: 12px 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+.warn-card { background: #fef3c7; } .ok-card { background: #dcfce7; }
+
+/* 统计卡片 */
+.stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 16px 0; }
+.stat-card { background: #fff; border-radius: 10px; padding: 16px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.08); color: inherit; }
+.stat-card:hover { text-decoration: none; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.stat-num { font-size: 30px; font-weight: 700; color: #1e293b; }
+.stat-label { color: #6b7280; font-size: 13px; margin-top: 4px; }
+.flow li { margin: 8px 0; }
+
+/* 表单 */
+label { display: block; font-weight: 600; font-size: 14px; margin: 12px 0 4px; }
+input[type=text], input[type=password], input[type=number], textarea, select {
+  width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;
+  font-size: 16px; font-family: inherit; background: #fff;
+}
+textarea { resize: vertical; }
+input:focus, textarea:focus, select:focus { outline: 2px solid #93c5fd; border-color: #93c5fd; }
+
+/* 按钮 */
+.btn {
+  display: inline-block; padding: 9px 16px; border-radius: 8px; border: 1px solid #cbd5e1;
+  background: #fff; color: #24292f; font-size: 15px; cursor: pointer; margin: 4px 4px 4px 0;
+}
+.btn:hover { background: #f1f5f9; text-decoration: none; }
+.btn.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+.btn.primary:hover { background: #1d4ed8; }
+.btn.danger { color: #dc2626; border-color: #fca5a5; }
+.btn.danger:hover { background: #fef2f2; }
+.btn-row { margin-top: 8px; }
+
+/* 筛选条 */
+.filter-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 12px 0; }
+.filter-bar select, .filter-bar input { width: auto; flex: 1; min-width: 100px; }
+.filter-bar .btn { flex: none; }
+
+/* 题目列表 */
+.q-list { margin: 12px 0; }
+.q-card { display: flex; gap: 8px; padding: 12px; }
+.q-check { margin: 0; flex: none; padding-top: 4px; }
+.q-check input { width: 20px; height: 20px; }
+.q-body { flex: 1; min-width: 0; }
+.q-content { display: block; font-size: 16px; line-height: 1.6; color: #24292f; }
+.q-meta { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+.badge {
+  display: inline-block; padding: 2px 10px; border-radius: 999px; background: #eef2f7;
+  color: #475569; font-size: 12px;
+}
+.badge.wrong { background: #fee2e2; color: #b91c1c; }
+.badge.ok { background: #dcfce7; color: #15803d; }
+.badge.warn { background: #fef3c7; color: #b45309; }
+.q-fig { max-width: 100%; max-height: 180px; margin-top: 8px; border: 1px solid #e2e8f0; border-radius: 6px; }
+
+/* 批改 */
+.grade-btns { display: flex; gap: 10px; margin-top: 10px; }
+.grade-opt {
+  flex: 1; text-align: center; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;
+  font-weight: 600; cursor: pointer; margin: 0;
+}
+.grade-opt input { display: none; }
+.grade-opt.right.checked { background: #dcfce7; border-color: #22c55e; color: #15803d; }
+.grade-opt.wrong.checked { background: #fee2e2; border-color: #ef4444; color: #b91c1c; }
+.ans-details { margin-top: 8px; font-size: 14px; }
+.ans-details summary { cursor: pointer; color: #2563eb; }
+
+/* 底部固定操作条 */
+.sticky-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px;
+  background: #fff; box-shadow: 0 -2px 8px rgba(0,0,0,.1); text-align: center; z-index: 10;
+}
+.sticky-bar .btn { min-width: 200px; }
+
+/* 裁剪 */
+.crop-box { margin-top: 8px; }
+.crop-tip { font-size: 14px; color: #6b7280; }
+#crop-canvas { max-width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; touch-action: none; cursor: crosshair; }
+.fig-preview img { max-width: 100%; max-height: 200px; border: 1px solid #e2e8f0; border-radius: 6px; display: block; }
+.photo-label input { margin-bottom: 8px; }
+
+/* ============ 试卷（打印核心） ============ */
+.toolbar { margin: 8px 0; }
+.paper { background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.paper-head { text-align: center; margin-bottom: 16px; }
+.paper-title { font-size: 22px; margin: 0 0 8px; }
+.paper-info { display: flex; justify-content: center; gap: 24px; color: #374151; font-size: 15px; flex-wrap: wrap; }
+.q-block { margin: 14px 0; page-break-inside: avoid; }
+.q-stem { line-height: 1.8; font-size: 16px; }
+.q-no { font-weight: 700; margin-right: 4px; }
+.q-block-fig { max-width: 60%; max-height: 200px; display: block; margin: 8px 0; }
+.answer-space {
+  min-height: 110px; border: 1px dashed #94a3b8; border-radius: 4px;
+  margin-top: 8px; position: relative;
+}
+.answer-space::before {
+  content: "解答区"; position: absolute; top: 4px; right: 8px;
+  color: #cbd5e1; font-size: 12px;
+}
+.answers-section { page-break-before: always; margin-top: 24px; }
+.answers-title { border-bottom: 2px solid #24292f; padding-bottom: 6px; }
+.ans-block { border-left: 3px solid #cbd5e1; padding-left: 10px; margin: 16px 0; }
+.ans-text { line-height: 1.8; }
+
+/* ============ 打印 ============ */
+@media print {
+  body { background: #fff; font-size: 13pt; }
+  .no-print, .topnav, main { max-width: none; margin: 0; padding: 0; }
+  main { padding: 0 8mm; }
+  .paper { box-shadow: none; padding: 0; }
+  .q-block { page-break-inside: avoid; }
+  .answer-space { min-height: 100px; }
+  @page { size: A4 portrait; margin: 14mm 12mm; }
+}

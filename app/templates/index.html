@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}首页 - 错题本{% endblock %}
+{% block content %}
+<h1>错题本</h1>
+<p class="muted">拍照收集错题，重新排版打印给孩子重做。重复出错的题优先出卷，隔段时间自动重现。</p>
+
+<div class="stat-grid">
+  <a class="stat-card" href="/questions?status=active">
+    <div class="stat-num">{{ active }}</div>
+    <div class="stat-label">待重做题数</div>
+  </a>
+  <a class="stat-card" href="/paper/new">
+    <div class="stat-num {{ 'warn' if due > 0 else '' }}">{{ due }}</div>
+    <div class="stat-label">已到间隔期（超 {{ days }} 天）</div>
+  </a>
+  <a class="stat-card" href="/papers">
+    <div class="stat-num">{{ papers }}</div>
+    <div class="stat-label">已组试卷</div>
+  </a>
+  <a class="stat-card" href="/questions?status=mastered">
+    <div class="stat-num">{{ mastered }}</div>
+    <div class="stat-label">已掌握（移出）</div>
+  </a>
+</div>
+
+<div class="card">
+  <h2>日常使用</h2>
+  <ol class="flow">
+    <li><b>手机</b>打开「<a href="/upload">拍照录入</a>」，拍下错题，AI 自动识别，核对后保存</li>
+    <li><b>电脑</b>打开「<a href="/paper/new">组卷</a>」生成重做卷，浏览器打印（Ctrl+P 存为 PDF 或直接打印）</li>
+    <li>孩子做完后，在「<a href="/papers">试卷</a>」里逐题勾选对错；做错的题错误次数 +1，会优先再出</li>
+  </ol>
+  <p class="muted">手机和电脑需连接同一 WiFi，手机访问 http://电脑IP:8000</p>
+</div>
+{% endblock %}

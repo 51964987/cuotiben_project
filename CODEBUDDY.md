@@ -1,0 +1,24 @@
+# 项目说明（错题本）
+
+面向五年级学生的错题收集与重做打印工具。核心链路：手机拍照录入（智谱 GLM-4V 识别题干与答案）→ 本地题库（SQLite）→ 重新排版生成干净 A4 重做卷（浏览器打印，答案页置后）→ 家长批改驱动「重复出错优先、间隔重出、连续做对移出」。
+
+## 技术栈
+
+Python FastAPI + SQLite + Jinja2 + 原生前端（KaTeX 渲染公式）；单机局域网部署，监听 `0.0.0.0:8000`，数据全部存本地 `data\` 目录。
+
+## 目录结构
+
+- `app\main.py`：全部路由；`app\db.py`：数据库表结构与间隔选题逻辑；`app\ai.py`：GLM-4V 拍照识别
+- `app\templates\`：页面（含 A4 打印排版）；`app\static\`：样式与图形框选裁剪脚本
+- `data\`：运行时数据——`cuotiben.db`、`photos\`（原照片）、`figures\`（裁剪图形），备份此目录即可
+
+## 常用命令
+
+- 启动服务：`start.bat` 或 `python run.py`（启动前自动清理 8000 端口占用进程）
+- 安装依赖：`pip install -r requirements.txt`
+
+## 文档与规则
+
+- 行为约束（角色定位 / 核心约束 / 通用工程约束）：`.codebuddy/rules/cuotiben-core/RULE.mdc`（alwaysApply: true，每会话生效）
+- 工程教训归档：`docs/CODEBUDDY规则归档_20260924.md`（尚未创建，首次沉淀教训时按「原 N」编号体系补建）
+- 使用说明：`README.md`

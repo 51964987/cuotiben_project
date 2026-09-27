@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ paper.title }} - 错题本{% endblock %}
+{% block content %}
+<div class="toolbar no-print">
+  <button class="btn primary" onclick="window.print()">🖨 打印 / 存为 PDF</button>
+  <a class="btn" href="/papers/{{ paper.id }}/grade">批改此卷</a>
+  <a class="btn" href="/papers">返回列表</a>
+  <span class="muted">打印时请在浏览器设置中勾选「背景图形」，A4 纵向</span>
+</div>
+
+<div class="paper">
+  <div class="paper-head">
+    <h1 class="paper-title">{{ paper.title }}</h1>
+    <div class="paper-info">
+      <span>姓名：__________</span>
+      <span>日期：__________</span>
+      <span>得分：__________</span>
+    </div>
+  </div>
+
+  <div class="q-blocks">
+    {% for q in items %}
+    <div class="q-block">
+      <div class="q-stem"><span class="q-no">{{ loop.index }}.</span><span class="math-target">{{ q.content }}</span></div>
+      {% if q.figure %}<img class="q-block-fig" src="/figures/{{ q.figure }}">{% endif %}
+      <div class="answer-space"></div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="answers-section">
+    <h2 class="answers-title">参考答案与解析（家长页）</h2>
+    {% for q in items %}
+    <div class="q-block ans-block">
+      <div class="q-stem"><span class="q-no">{{ loop.index }}.</span><span class="math-target">{{ q.content }}</span>
+        {% if q.figure %}<img class="q-block-fig" src="/figures/{{ q.figure }}">{% endif %}
+      </div>
+      <div class="ans-text math-target">{{ q.answer or '（无答案记录）' }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
