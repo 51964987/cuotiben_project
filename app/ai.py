@@ -3,7 +3,7 @@ import base64
 import json
 import os
 import re
-from typing import cast
+from typing import TypedDict, cast
 
 import httpx
 
@@ -47,7 +47,16 @@ def _extract_content(resp: httpx.Response) -> str:
     return cast(str, message["content"])
 
 
-def recognize_question(photo_bytes: bytes) -> dict[str, str | bool]:
+class Recognition(TypedDict):
+    """recognize_question 的返回结构：字段类型精确，调用方取值无需再收窄。"""
+
+    content: str      # 题干文字（含 LaTeX，可能含 [图] 占位符）
+    answer: str       # 参考答案与解题过程
+    knowledge: str    # 知识点标签
+    has_figure: bool  # 题干是否含几何图形/线段图等需截图部分
+
+
+def recognize_question(photo_bytes: bytes) -> Recognition:
     """返回 {"content","answer","knowledge","has_figure"}；失败抛异常，无 Key 抛 ValueError。"""
     api_key = get_api_key()
     if not api_key:

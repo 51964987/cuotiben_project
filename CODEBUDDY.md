@@ -20,9 +20,10 @@ Python FastAPI + SQLite + Jinja2 + 原生前端（KaTeX 渲染公式）；单机
 ## 共享实现索引
 
 - 建表与库连接：`app\db.py` 的 `init_db` / `get_db`（全项目唯一建表点）
+- 类型收窄助手：`app\db.py` 的 `_fetchone` / `_fetchall` / `_s` / `_i`（业务代码取行取列唯一入口，路由层禁止裸 `conn.execute`；题库 / 组卷 / 批改的数据访问函数也集中在 `app\db.py`）
 - 答案归一化与自动判分：`app\db.py` 的 `normalize_answer` / `answers_equal`（变式练习判分唯一实现，勿另写比对逻辑）
 - 间隔选题：`app\db.py` 的 `eligible_questions`（组卷选题唯一实现）
-- GLM-4V 拍照识别：`app\ai.py`（全项目唯一 AI 调用点）
+- GLM-4V 拍照识别：`app\ai.py`（全项目唯一 AI 调用点；`recognize_question` 返回 TypedDict `Recognition`）
 
 ## 文档与规则
 

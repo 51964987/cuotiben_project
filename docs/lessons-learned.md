@@ -45,3 +45,18 @@
 - **强制动作**：先核对三件事——① 依赖是否真的装在运行解释器的 site-packages（`pip show` 看 Location）；② 项目内是否有 venv / `pyrightconfig.json`；③ 分析器绑定解释器与运行解释器是否一致。不一致时在项目根新建 `pyrightconfig.json`，写入 `"pythonPath"` 指向运行解释器，并加 `"extraPaths"` 直接指向 site-packages 目录兜底；禁止为消告警改业务代码或加 `# type: ignore`。
 - **本项目实例**：2026-09-27 `app/ai.py` 报 42 条问题，根因是分析器未绑定 `D:/biancheng/python/python3.11.4`（httpx 0.28.1 实际已装且可导入，项目无 venv 无 pyright 配置）；补 `pyrightconfig.json`（pythonPath + extraPaths）后 42 → 2，再修 2 处 `raise_for_status()` 未使用返回值即清零。
 - **验证方式**：`read_lints` 全工作区 0 告警；`python -c "import app.main"` 真实导入成功；`_parse_json` / `_extract_content` 用本地构造的 httpx.Response 冒烟通过。
+
+---
+
+## 原 11：静态检查报「N 个问题」按规则码归因分类，真实缺陷同码全项目举一反三
+
+- **日期**：2026-09-27
+- **触发场景**：IDE / `read_lints` 对某个 py 文件报「存在 XX 个问题」（错误 + 警告混报）时。总数无意义：同一根因会派生多条、不同严重级；必须看 basedpyright 规则码（`reportXxx`）。
+- **强制动作**：
+  1. 不看总数看规则码：逐条按 `reportXxx` 码归类统计（码 → 条数 → 行号）；
+  2. 逐类判定性质，只分三种：① 真实缺陷（弃用 API、死参数、类型不安全操作）；② 违反项目已有规则（如原 9 类型收窄未走助手）；③ 框架惯用误报（如 FastAPI 的 `Form(...)` 默认值触发 reportCallInDefaultInitializer，属严格模式对框架模式的误报）；
+  3. ①② 类按同码全项目举一反三：对同目录其余 py 文件跑 `read_lints` 或 `search_content` 查同源写法，反馈列出「查了哪些文件、结论是什么」；
+  4. ③ 类误报禁止在业务代码加 `# type: ignore` 或为消音改写框架惯用代码；若确认整类误报，在归档记录后可在 `pyrightconfig.json` 按码关闭该检查，而不是散落注解。
+- **本项目实例**：2026-09-27 `app/main.py` 报 71 条（8 错误 + 63 警告），按码归为 4 类：A. 表单值未收窄（`form.get()` 返回 `UploadFile | str` 直接进 `int()` / `.strip()`）→ 8 条错误全部，根因一个；B. 违反原 9（裸 `conn.execute` + Row Any，未走 `_fetchone`/`_fetchall`/`_s`/`_i`）→ 约 30 条 reportAny/reportUnknown/reportUnusedCallResult；C. FastAPI `Form(...)` 默认值误报 → 17 条 reportCallInDefaultInitializer；D. 零散真实问题（`on_event("startup")` 弃用、`/paper/new` 的 `max_count` 死参数、`_figure_question(q)` 缺注解、SQL 隐式字符串拼接）。举一反三：`read_lints` 全查 `app/db.py`、`app/ai.py`、`run.py` 均 0 条，确认 B 类仅 main.py 一个残留点。
+- **验证方式**：归类表与全项目排查结论在会话反馈中列出；修复后 `read_lints` 复查到目标状态（错误 0；警告按 A/B/D 清零、C 类按配置处理），`py_compile` 通过。
+- **补充（2026-09-27，配置层事实）**：`pyrightconfig.json` 的 `include` 原为 `["app", "run.py"]`，B 类重构的隔离冒烟脚本写在项目根时发现其不受静态检查覆盖——后续新增 py 文件是否被检查取决于 include 范围。已改为 `["**"]` 全工作区覆盖（工具层自动生效，无需行为规则约束）；「自主检查」流程本身由规则 2（交付前检查 + 端到端实测）与规则 11（按码归因）覆盖，不再新增重复规则。

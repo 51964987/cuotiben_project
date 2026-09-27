@@ -30,3 +30,4 @@ enabled: true
 8. **数据模型注释**：建表 DDL 必须中文注释——每张表带表级注释说明用途与业务链路位置，每列带行内注释说明含义与取值 / 枚举（SQLite 不支持 COMMENT 语法，用 `--` 行注释实现，以 DDL 为唯一权威文档）。（原 8，详见归档）
 9. **类型收窄集中化**：sqlite3 `Row`/`fetchone`/`fetchall` 返回 Any，禁止散落 `str(row[...])`/`int(row[...])`，一律经 `app/db.py` 的 `_fetchone`/`_fetchall`/`_s`/`_i` 助手集中 cast 收窄，新增查询只经助手取行取列；第三方接口返回 Any（如 `resp.json()`）同理集中 cast。（原 9，详见归档）
 10. **导入解析报错先查环境**：报 reportMissingImports 而依赖实际可导入时，是分析器未绑定运行解释器——在项目根 `pyrightconfig.json` 配 `pythonPath` + `extraPaths`（指向 site-packages）解决，禁止为消告警改业务代码或加 `# type: ignore`。（原 10，详见归档）
+11. **静态告警按码归因**：脚本报「N 个问题」时不看总数看规则码（`reportXxx`），逐类定性为真实缺陷 / 违反项目规则 / 框架惯用误报；前两类按同码全项目举一反三排查并报告结论，误报类禁止 `# type: ignore` 消音、确认后统一在 `pyrightconfig.json` 按码处理。（原 11，详见归档）

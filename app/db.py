@@ -173,6 +173,214 @@ def eligible_questions(days: int, limit: int = 0) -> list[sqlite3.Row]:
     return out[:limit] if limit > 0 else out
 
 
+# ---------- 题库 / 组卷 / 批改（main.py 路由经此层取数写库，禁止在路由里散落裸 conn.execute） ----------
+
+def get_stats() -> dict[str, int]:
+    """首页统计卡：各状态题目数与试卷总数（键穷举全部状态，保证 总数 == Σ 分类）。"""
+    conn = get_db()
+
+    def _count(sql: str) -> int:
+        row = _fetchone(conn, sql)
+        return _i(row, "c") if row else 0
+
+    stats = {
+        "active": _count("SELECT COUNT(*) c FROM questions WHERE status='active'"),
+        "mastered": _count("SELECT COUNT(*) c FROM questions WHERE status='mastered'"),
+        "papers": _count("SELECT COUNT(*) c FROM papers"),
+    }
+    conn.close()
+    return stats
+
+
+def create_question(photo: str) -> int:
+    """拍照录入：先建空题占位（内容待 AI 识别或手动回填），返回题目 id。"""
+    conn = get_db()
+    cur = conn.execute(
+        "INSERT INTO questions(content, photo, created_at, last_wrong_at) VALUES('', ?, ?, ?)",
+        (photo, now_str(), now_str()),
+    )
+    qid = cast(int, cur.lastrowid)   # INSERT 成功后 lastrowid 必为整数
+    conn.commit()
+    conn.close()
+    return qid
+
+
+def update_recognition(qid: int, content: str, answer: str, knowledge: str) -> None:
+    """AI 识别结果回填：写入题干 / 答案 / 知识点。"""
+    conn = get_db()
+    _ = conn.execute(
+        "UPDATE questions SET content=?, answer=?, knowledge=? WHERE id=?",
+        (content, answer, knowledge, qid),
+    )
+    conn.commit()
+    conn.close()
+
+
+def list_questions(status: str, q: str) -> list[sqlite3.Row]:
+    """题库列表：状态过滤（仅 active/mastered 生效，其余视为全部）、关键词模糊搜题干/答案/知识点，错次多优先。"""
+    conn = get_db()
+    sql = "SELECT * FROM questions WHERE 1=1"
+    params: list[str | int] = []
+    if status in ("active", "mastered"):
+        sql += " AND status=?"
+        params.append(status)
+    if q:
+        sql += " AND (content LIKE ? OR answer LIKE ? OR knowledge LIKE ?)"
+        params += [f"%{q}%"] * 3
+    rows = _fetchall(conn, sql + " ORDER BY wrong_count DESC, last_wrong_at DESC", tuple(params))
+    conn.close()
+    return rows
+
+
+def update_question_fields(
+    qid: int, content: str, answer: str, knowledge: str, source: str, status: str, figure: str = ""
+) -> None:
+    """编辑页保存：全字段更新；figure 非空时一并更新图形文件名。"""
+    figure_sql = ", figure=?" if figure else ""
+    params: list[str | int] = [content, answer, knowledge, source, status]
+    if figure:
+        params.append(figure)
+    params.append(qid)
+    conn = get_db()
+    _ = conn.execute(
+        f"UPDATE questions SET content=?, answer=?, knowledge=?, source=?, status=?{figure_sql} WHERE id=?",
+        tuple(params),
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_question_cascade(qid: int) -> None:
+    """删题：先删组卷关联再删主记录（attempts 流水保留，其 question_id 不设外键）。"""
+    conn = get_db()
+    _ = conn.execute("DELETE FROM paper_items WHERE question_id=?", (qid,))
+    _ = conn.execute("DELETE FROM questions WHERE id=?", (qid,))
+    conn.commit()
+    conn.close()
+
+
+def get_questions_by_ids(ids: list[int]) -> list[sqlite3.Row]:
+    """按 id 集合取题（手动组卷用），错次多优先；ids 为空返回空表。"""
+    if not ids:
+        return []
+    conn = get_db()
+    marks = ",".join("?" * len(ids))
+    rows = _fetchall(
+        conn,
+        f"SELECT * FROM questions WHERE id IN ({marks}) ORDER BY wrong_count DESC",
+        tuple(ids),
+    )
+    conn.close()
+    return rows
+
+
+def create_paper(title: str, strategy: str, question_ids: list[int]) -> int:
+    """建卷并写入题目关联，返回试卷 id（strategy 为组卷参数 JSON 字符串）。"""
+    conn = get_db()
+    cur = conn.execute(
+        "INSERT INTO papers(title, strategy, created_at) VALUES(?, ?, ?)",
+        (title, strategy, now_str()),
+    )
+    pid = cast(int, cur.lastrowid)
+    _ = conn.executemany(
+        "INSERT INTO paper_items(paper_id, question_id) VALUES(?, ?)",
+        [(pid, qid) for qid in question_ids],
+    )
+    conn.commit()
+    conn.close()
+    return pid
+
+
+def list_papers_summary() -> list[sqlite3.Row]:
+    """试卷列表：带每卷题数与做对题数，新卷在前。"""
+    conn = get_db()
+    rows = _fetchall(
+        conn,
+        """
+        SELECT p.*, COUNT(pi.question_id) AS qcount,
+               SUM(CASE WHEN pi.result='right' THEN 1 ELSE 0 END) AS right_count
+        FROM papers p LEFT JOIN paper_items pi ON pi.paper_id = p.id
+        GROUP BY p.id ORDER BY p.id DESC
+        """,
+    )
+    conn.close()
+    return rows
+
+
+def get_paper(pid: int) -> sqlite3.Row | None:
+    """取单卷记录，无则 None。"""
+    conn = get_db()
+    row = _fetchone(conn, "SELECT * FROM papers WHERE id=?", (pid,))
+    conn.close()
+    return row
+
+
+def get_paper_items(pid: int) -> list[sqlite3.Row]:
+    """取卷内题目（连带本卷批改结果），错次多优先——试卷查看页与批改页共用同一查询。"""
+    conn = get_db()
+    rows = _fetchall(
+        conn,
+        """
+        SELECT q.*, pi.result FROM paper_items pi
+        JOIN questions q ON q.id = pi.question_id
+        WHERE pi.paper_id=? ORDER BY q.wrong_count DESC, q.last_wrong_at
+        """,
+        (pid,),
+    )
+    conn.close()
+    return rows
+
+
+def delete_paper_cascade(pid: int) -> None:
+    """删卷：先删题目关联再删卷主记录。"""
+    conn = get_db()
+    _ = conn.execute("DELETE FROM paper_items WHERE paper_id=?", (pid,))
+    _ = conn.execute("DELETE FROM papers WHERE id=?", (pid,))
+    conn.commit()
+    conn.close()
+
+
+def get_paper_question_ids(pid: int) -> list[int]:
+    """取卷内全部题目 id（批改提交时按此遍历表单字段）。"""
+    conn = get_db()
+    rows = _fetchall(conn, "SELECT question_id FROM paper_items WHERE paper_id=?", (pid,))
+    conn.close()
+    return [_i(r, "question_id") for r in rows]
+
+
+def save_paper_grades(pid: int, results: dict[int, str], threshold: int) -> None:
+    """一次批改落库：逐题写关联表结果 + 追加作答流水 + 更新题库计数与状态。
+    right=连续做对 +1，达阈值置 mastered；wrong=错次 +1、连续清零、拉回 active。"""
+    conn = get_db()
+    for qid, result in results.items():
+        _ = conn.execute(
+            "UPDATE paper_items SET result=? WHERE paper_id=? AND question_id=?",
+            (result, pid, qid),
+        )
+        _ = conn.execute(
+            "INSERT INTO attempts(question_id, paper_id, result, attempted_at) VALUES(?,?,?,?)",
+            (qid, pid, result, now_str()),
+        )
+        q = _fetchone(conn, "SELECT * FROM questions WHERE id=?", (qid,))
+        if q is None:
+            continue
+        if result == "right":
+            cc = _i(q, "consecutive_correct") + 1
+            status = "mastered" if cc >= threshold else _s(q, "status")
+            _ = conn.execute(
+                "UPDATE questions SET consecutive_correct=?, status=? WHERE id=?",
+                (cc, status, qid),
+            )
+        else:
+            _ = conn.execute(
+                "UPDATE questions SET wrong_count=wrong_count+1, consecutive_correct=0, status='active', last_wrong_at=? WHERE id=?",
+                (now_str(), qid),
+            )
+    _ = conn.execute("UPDATE papers SET graded=1 WHERE id=?", (pid,))
+    conn.commit()
+    conn.close()
+
+
 # ---------- 答案归一化判分（变式练习自动判分用，唯一实现） ----------
 
 _FULL2HALF = str.maketrans(
@@ -370,3 +578,25 @@ def recompute_batch_status(batch_id: int) -> str:
     conn.commit()
     conn.close()
     return status
+
+
+def record_variant_answer(item_id: int, result: str, user_answer: str) -> None:
+    """落库单个变式题的作答与判分结果（提交时逐题调用，未填的题不调）。"""
+    conn = get_db()
+    _ = conn.execute(
+        "UPDATE variant_items SET result=?, user_answer=?, answered_at=? WHERE id=?",
+        (result, user_answer, now_str(), item_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+def override_variant_item(batch_id: int, item_id: int, result: str) -> None:
+    """家长改判单题：result 传空字符串表示撤销判分，恢复待作答。"""
+    conn = get_db()
+    _ = conn.execute(
+        "UPDATE variant_items SET result=? WHERE id=? AND batch_id=?",
+        (result, item_id, batch_id),
+    )
+    conn.commit()
+    conn.close()

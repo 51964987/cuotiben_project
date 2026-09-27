@@ -4,5 +4,10 @@
     // 双保险：显式把 site-packages 加进导入搜索路径，确保 httpx/fastapi 等可解析
     "extraPaths": ["D:/biancheng/python/python3.11.4/Lib/site-packages"],
     "pythonVersion": "3.11",
-    "include": ["app", "run.py"]
+    // 全工作区所有 py 文件（含根目录脚本）都纳入静态检查，不留覆盖盲区
+    "include": ["**"],
+    // reportCallInDefaultInitializer：FastAPI 路由参数默认值 Form(...)/File(...) 是框架标准写法（依赖默认值对象传依赖声明），非业务缺陷，按码关闭（原 11）
+    "reportCallInDefaultInitializer": false,
+    // reportPrivateUsage：db.py 的 _s/_i/_fetchone/_fetchall 收窄助手按规则 9 就是给业务层跨模块用的，下划线仅为「内部约定」标记，非 Python 私有语义，按码关闭（原 9 / 原 11）
+    "reportPrivateUsage": false
 }
