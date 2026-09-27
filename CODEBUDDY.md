@@ -17,8 +17,15 @@ Python FastAPI + SQLite + Jinja2 + 原生前端（KaTeX 渲染公式）；单机
 - 启动服务：`start.bat` 或 `python run.py`（启动前自动清理 8000 端口占用进程）
 - 安装依赖：`pip install -r requirements.txt`
 
+## 共享实现索引
+
+- 建表与库连接：`app\db.py` 的 `init_db` / `get_db`（全项目唯一建表点）
+- 答案归一化与自动判分：`app\db.py` 的 `normalize_answer` / `answers_equal`（变式练习判分唯一实现，勿另写比对逻辑）
+- 间隔选题：`app\db.py` 的 `eligible_questions`（组卷选题唯一实现）
+- GLM-4V 拍照识别：`app\ai.py`（全项目唯一 AI 调用点）
+
 ## 文档与规则
 
 - 行为约束（角色定位 / 核心约束 / 通用工程约束）：`.codebuddy/rules/cuotiben-core/RULE.mdc`（alwaysApply: true，每会话生效）
-- 工程教训归档：`docs/CODEBUDDY规则归档_20260924.md`（尚未创建，首次沉淀教训时按「原 N」编号体系补建）
+- 工程教训归档：`docs/lessons-learned.md`（按「原 N」编号体系续号沉淀）
 - 使用说明：`README.md`
